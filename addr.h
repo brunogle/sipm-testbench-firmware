@@ -1,0 +1,4 @@
+#define GPIO0_ADDR 0x41200000
+#define GPIO0_SIZE 0x10000
+#define SPI_ADDR   0x41E00000
+#define SPI_SIZE   0x10000
