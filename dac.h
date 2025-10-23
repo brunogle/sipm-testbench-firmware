@@ -25,6 +25,8 @@
 #define CMD_INTERNAL_REF_EN       0x38 
 #define DATA_INTERNAL_REF_EN      0x0001
 
+#define DAC_SPI_SLAVE_NUM         0
+
 void dac_initialize(void * spi_map);
 void dac_set_a(void * spi_map, uint16_t code);
 void dac_set_b(void * spi_map, uint16_t code);

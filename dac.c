@@ -12,7 +12,7 @@ static void dac_write_reg(void * spi_map, uint8_t cmd, uint16_t data) {
     packet[2] = data & 0xFF;
     for (volatile int i = 0; i < 500; ++i);
     
-    spi_transfer(spi_map, packet, 3);
+    spi_transfer(spi_map, packet, 3, DAC_SPI_SLAVE_NUM);
     for (volatile int i = 0; i < 500; ++i);
 }
 

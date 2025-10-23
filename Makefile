@@ -6,21 +6,31 @@ CFLAGS = -Wall -Wextra
 OBJDIR = obj
 BINDIR = bin
 
-# Target executable
-TARGET = $(BINDIR)/setvsipm
+# Shared source files
+COMMON_SRCS = dac.c fpga.c vdac_cal.c
 
-# Source and object files
-SRCS = dac.c fpga.c vdac_cal.c setvsipm.c
-OBJS = $(addprefix $(OBJDIR)/,$(SRCS:.c=.o))
+# Executables
+TARGETS = $(BINDIR)/setvsipm $(BINDIR)/sampleadc
+
+# Sources for each target
+SETVSIPM_SRCS = $(COMMON_SRCS) setvsipm.c
+SAMPLEADC_SRCS = $(COMMON_SRCS) sampleadc.c
+
+# Object files
+SETVSIPM_OBJS = $(addprefix $(OBJDIR)/,$(SETVSIPM_SRCS:.c=.o))
+SAMPLEADC_OBJS = $(addprefix $(OBJDIR)/,$(SAMPLEADC_SRCS:.c=.o))
 
 # Header dependencies
 DEPS = addr.h dac.h fpga.h vdac_cal.h
 
 # Default rule
-all: $(BINDIR) $(OBJDIR) $(TARGET)
+all: $(BINDIR) $(OBJDIR) $(TARGETS)
 
-# Linking
-$(TARGET): $(OBJS)
+# Linking rules
+$(BINDIR)/setvsipm: $(SETVSIPM_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BINDIR)/sampleadc: $(SAMPLEADC_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Compilation rule
@@ -35,4 +45,5 @@ $(BINDIR) $(OBJDIR):
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)
 
-# Optional: reb
+# Optional rebuild
+rebuild: clean all
