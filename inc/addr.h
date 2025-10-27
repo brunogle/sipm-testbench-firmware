@@ -1,3 +1,7 @@
+#ifndef ADDR_H
+#define ADDR_H
+
+
 #define GPIO0_ADDR 0x41200000
 #define GPIO0_SIZE 0x10000
 
@@ -9,3 +13,5 @@
 
 #define ADC_SAMPLER_ADDR 0x60000000
 #define ADC_SAMPLER_SIZE 0x10000
+
+#endif

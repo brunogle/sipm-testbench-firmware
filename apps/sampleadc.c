@@ -1,7 +1,7 @@
 #include "fpga.h"
-#include "dac.h"
+#include "dac8562.h"
 #include "addr.h"
-#include "vdac_cal.h"
+#include "bias.h"
 
 #include <string.h>
 
@@ -37,9 +37,11 @@ int main(int argc, char **argv){
     }
 
 
-    void * dma_cfg_map = map_device(DMA_CFG_ADDR, DMA_CFG_SIZE);
-    void * adc_sampler_map = map_device(ADC_SAMPLER_ADDR, ADC_SAMPLER_SIZE);
+    mem_map_t mem_map;
 
+    fpga_map_devices(&mem_map);
+
+    
     // Prepare DMA mapped memory
     uint32_t phys_dma = 0;
     void * dma_map = map_dma_mem(DMA_SIZE, &phys_dma);
@@ -47,21 +49,20 @@ int main(int argc, char **argv){
 
 
     // Start DMA
-    dma_s2mm_start(dma_cfg_map, phys_dma, DMA_SIZE);
+    dma_s2mm_start(mem_map, phys_dma, DMA_SIZE);
 
     // Start ADC Sampler
-    WR_REG_32(adc_sampler_map, 0x4, samples);
-    WR_REG_32(adc_sampler_map, 0x0, 0x1);
+    sampler_set_count(mem_map, samples);
+    sampler_start(mem_map);
 
     // Wait for DMA to finish
-    dma_s2mm_sync(dma_cfg_map);
+    dma_s2mm_sync(mem_map);
     
 
     write_samples("adc_samples.txt", dma_map, samples);
 
 
-    unmap_device(dma_cfg_map, DMA_CFG_SIZE);
-    unmap_device(dma_map, DMA_SIZE);
+    fpga_unmap_devices(mem_map);
 
     return 0;
 }

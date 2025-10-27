@@ -1,5 +1,6 @@
-#include "vdac_cal.h"
-
+#include "bias.h"
+#include "dac8562.h"
+#include "fpga.h"
 
 int vdac_load_curve(const char *filename, vdac_cal_curve_t *curve) {
     FILE *file = fopen(filename, "r");
@@ -71,3 +72,30 @@ int vdac_interpolate(const vdac_cal_curve_t *curve, double x, double *y_out) {
     return -1;
 }
 
+
+
+int bias_set_vout(mem_map_t mem_map, float voltage, const vdac_cal_curve_t *curve){
+    double dac_code;
+
+    if(vdac_interpolate(curve, voltage, &dac_code) == -1){
+        return -1;
+    }
+
+    dac8562_set_a(mem_map, dac_code);
+
+    return 0;
+}
+
+
+int bias_set_dac_code(mem_map_t mem_map, int32_t dac_code){
+
+    dac8562_set_a(mem_map, dac_code);
+
+    return 0;
+}
+
+void bias_enable(mem_map_t mem_map, char state){
+
+    set_gpio_out_bit(mem_map, GPIO_HV_EN, state);
+
+}
