@@ -21,7 +21,6 @@ int main(int argc, char **argv){
     if(strcmp(argv[1], "0") == 0){
         dac_set_a(spi_map, 0);
         hv_out_set(gpio_map, 0);
-
         return 0;
     }
 

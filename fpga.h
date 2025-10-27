@@ -65,6 +65,8 @@ int unmap_device(void *map, size_t size);
 
 void spi_init(void * spi_map);
 void spi_transfer(void * spi_map, uint8_t *tx, int len, int slave);
+void spi_receive(void * spi_map, uint8_t *rx, int len, int slave);
+
 
 void hv_out_set(void * gpio_map, uint8_t state);
 

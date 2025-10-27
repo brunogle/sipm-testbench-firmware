@@ -35,3 +35,4 @@ void dac_set_a(void * spi_map, uint16_t code) {
 void dac_set_b(void * spi_map, uint16_t code) {
     dac_write_reg(spi_map, CMD_SETB_UPDATEB, code);
 }
+

@@ -55,23 +55,41 @@ void spi_init(void * spi_map) {
     // Configure mode: master, manual SS, CPOL=0, CPHA=1, enable
     uint32_t ctrl = CR_MASTER | CR_MANUAL_SS | CR_CPHA | CR_SPE;
     WR_REG_32(spi_map, SPICR, ctrl | CR_MASTER_INH);  // start inhibited
-    WR_REG_32(spi_map, SPISSR, 0x1); // deselect all slaves
+    WR_REG_32(spi_map, SPISSR, 0x3); // deselect all slaves
     
 }
 
 void spi_transfer(void * spi_map, uint8_t *tx, int len, int slave) {
-    
-    WR_REG_32(spi_map, SPISSR, ~(1<<slave)); // select slave
-    
-    WR_REG_32(spi_map, SPICR, RD_REG_32(spi_map, SPICR) & ~CR_MASTER_INH); // enable
+    WR_REG_32(spi_map, SPISSR, ~(1<<slave));
+    WR_REG_32(spi_map, SPICR, RD_REG_32(spi_map, SPICR) & ~CR_MASTER_INH);
     
     for (int i = 0; i < len; ++i) {
-        WR_REG_32(spi_map, SPIDTR, tx[i]);        
+        
+        WR_REG_32(spi_map, SPIDTR, tx[i]);    
+            
         spi_wait_tx_empty(spi_map);
     }
     
-    WR_REG_32(spi_map, SPISSR, 0xF); // deselect
-    WR_REG_32(spi_map, SPICR, RD_REG_32(spi_map, SPICR) | CR_MASTER_INH); // disable
+    WR_REG_32(spi_map, SPISSR, 0xF);
+    WR_REG_32(spi_map, SPICR, RD_REG_32(spi_map, SPICR) | CR_MASTER_INH);
+}
+
+
+void spi_receive(void * spi_map, uint8_t *rx, int len, int slave)
+{
+    WR_REG_32(spi_map, SPISSR, ~(1<<slave));
+    WR_REG_32(spi_map, SPICR, RD_REG_32(spi_map, SPICR) & ~CR_MASTER_INH);
+
+    for (int i = 0; i < len; ++i) {
+        WR_REG_32(spi_map, SPIDTR, 0xFF);
+        for(int xx = 0; xx < 10000; xx++){} // TODO: Why does it need this delay? The while doesnt work i think
+        while (RD_REG_32(spi_map, SPISR) & SPISR_RX_EMPTY);
+        rx[i] = (uint8_t)(RD_REG_32(spi_map, SPIDRR) & 0xFF);
+    }
+
+    WR_REG_32(spi_map, SPISSR, 0xF);
+    WR_REG_32(spi_map, SPICR, RD_REG_32(spi_map, SPICR) | CR_MASTER_INH);
+
 }
 
 

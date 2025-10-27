@@ -7,21 +7,25 @@ OBJDIR = obj
 BINDIR = bin
 
 # Shared source files
-COMMON_SRCS = dac.c fpga.c vdac_cal.c
+COMMON_SRCS = dac.c fpga.c vdac_cal.c ads1247.c gpio.c
 
 # Executables
-TARGETS = $(BINDIR)/setvsipm $(BINDIR)/sampleadc
+TARGETS = $(BINDIR)/setvsipm $(BINDIR)/sampleadc $(BINDIR)/readsense $(BINDIR)/ivcurve
 
 # Sources for each target
 SETVSIPM_SRCS = $(COMMON_SRCS) setvsipm.c
 SAMPLEADC_SRCS = $(COMMON_SRCS) sampleadc.c
+READSENSE_SRCS = $(COMMON_SRCS) readsense.c
+IVCURVE_SRCS = $(COMMON_SRCS) ivcurve.c
 
 # Object files
 SETVSIPM_OBJS = $(addprefix $(OBJDIR)/,$(SETVSIPM_SRCS:.c=.o))
 SAMPLEADC_OBJS = $(addprefix $(OBJDIR)/,$(SAMPLEADC_SRCS:.c=.o))
+READSENSE_OBJS = $(addprefix $(OBJDIR)/,$(READSENSE_SRCS:.c=.o))
+IVCURVE_OBJS = $(addprefix $(OBJDIR)/,$(IVCURVE_SRCS:.c=.o))
 
 # Header dependencies
-DEPS = addr.h dac.h fpga.h vdac_cal.h
+DEPS = addr.h dac.h fpga.h vdac_cal.h ads1247.h gpio.h
 
 # Default rule
 all: $(BINDIR) $(OBJDIR) $(TARGETS)
@@ -32,6 +36,13 @@ $(BINDIR)/setvsipm: $(SETVSIPM_OBJS)
 
 $(BINDIR)/sampleadc: $(SAMPLEADC_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
+
+$(BINDIR)/readsense: $(READSENSE_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BINDIR)/ivcurve: $(IVCURVE_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
+
 
 # Compilation rule
 $(OBJDIR)/%.o: %.c $(DEPS)
