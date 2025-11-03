@@ -12,5 +12,7 @@
 
 
 float sense_current_blocking(mem_map_t mem_map, char * sat);
+float sense_voltage_blocking(mem_map_t mem_map);
+
 
 #endif

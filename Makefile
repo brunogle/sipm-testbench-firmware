@@ -71,7 +71,7 @@ OBJ_DIR := obj
 BIN_DIR := bin
 
 # ==== Top-level apps (contain main()) ====
-TOP_APPS := setvsipm ivcurve readsense sampleadc      # <-- only those with main()
+TOP_APPS := setvsipm ivcurve readsense sampleadc gethist      # <-- only those with main()
 
 # ==== Sources ====
 COMMON_SRC := $(wildcard $(SRC_DIR)/*.c)
@@ -95,10 +95,10 @@ $(BIN_DIR)/%: $(COMMON_OBJ) $(HELPER_OBJ) $(OBJ_DIR)/%.o | $(BIN_DIR)
 	@echo "Built $@"
 
 # ==== Compile rules ====
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: $(APP_DIR)/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(APP_DIR)/%.c | $(OBJ_DIR) $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # ==== Ensure output dirs exist ====

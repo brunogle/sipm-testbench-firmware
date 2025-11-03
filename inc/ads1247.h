@@ -36,7 +36,7 @@
 
 #define ADS1247_SPI_SLAVE_NUM  1
 #define ADS1247_MUX0_CURR_SENSE 0x13
-#define ADS1247_MUX0_VOLT_SENSE 0x04 // AIN1=positive   AIN0=negative
+#define ADS1247_MUX0_VOLT_SENSE 0x08 // AIN1=positive   AIN0=negative
 
 // --- Default configuration
 

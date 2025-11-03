@@ -17,7 +17,10 @@ float sense_current_blocking(mem_map_t mem_map, char * sat){
 
     char scale = get_gpio_out_bit(mem_map, GPIO_SCALE);
 
-
+    /*
+    set_gpio_out_bit(mem_map, GPIO_SCALE, 1);
+    scale = 1;
+    */
     if(sat_ == 1 && scale == 0){ // Reading is saturating in low scale
         set_gpio_out_bit(mem_map, GPIO_SCALE, 1); //Change to high scale
         usleep(100000); // Wait for signal to stabilize
@@ -46,10 +49,26 @@ float sense_current_blocking(mem_map_t mem_map, char * sat){
     }
 
     if(scale){
-        return -adc_v*HIGH_SCALE_CURRENT_GAIN;
+        return -adc_v*HIGH_SCALE_CURRENT_GAIN;//*1.083;
     }
     else{
-        return -adc_v*LOW_SCALE_CURRENT_GAIN;
+        return -adc_v*LOW_SCALE_CURRENT_GAIN;//*9.333;
     }
+
+}
+
+
+float sense_voltage_blocking(mem_map_t mem_map){
+
+    ads1247_write_reg(mem_map, ADS1247_REG_MUX0, ADS1247_MUX0_VOLT_SENSE); // Set ADC input to current channel
+
+    ads1247_send_command(mem_map, ADS1247_CMD_SYNC); // Start conversion
+
+    while(!ads1247_data_ready(mem_map)){} // Wait for DRDY signal
+
+    int32_t adc_code = ads1247_read_data(mem_map);
+    float adc_v = ads1247_code_to_voltage(adc_code, 1, NULL);
+
+    return adc_v*46.4545;
 
 }

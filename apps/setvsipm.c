@@ -15,7 +15,10 @@ int main(int argc, char **argv){
 
     mem_map_t mem_map;
 
-    fpga_map_devices(&mem_map);
+    if(fpga_map_devices(&mem_map) != 1){
+        printf("Error mapping FPGA devices\n");
+        return 1;
+    }
 
     spi_init(mem_map);
     dac8562_initialize(mem_map);

@@ -25,20 +25,24 @@ int main(void)
     ads1247_init(mem_map);
     dac8562_initialize(mem_map);
 
-    
+    int vmin = 50;
+    int vmax = 69;
+
+
     ads1247_set_sys(mem_map, ADS1247_PGA_1, ADS1247_DR_5);
     
-    bias_set_vout(mem_map, 60, &vdac_cal_curve);
+    bias_set_vout(mem_map, vmin, &vdac_cal_curve);
     bias_enable(mem_map, 1);
 
     usleep(3000000);
 
     FILE *fp = fopen("ivcurve.txt", "w");
     
-    for(float v = 65; v < 69.5; v+=0.02){
+
+    for(float v = vmin; v < vmax; v+=0.2){
 
         bias_set_vout(mem_map, v, &vdac_cal_curve);
-        usleep(500000);
+        usleep(1000000);
 
         
         char sat;
@@ -46,7 +50,7 @@ int main(void)
 
         printf("%f : ", v);
         printf("%f nA", isense_na);
-        printf("  %.2f%%", 100.0*(v-65.0)/(69.5-65.0));
+        printf("  %.2f%%", 100.0*(v-vmin)/(vmax-vmin));
         if(sat) printf(" (sat)");
         printf("\n");
 

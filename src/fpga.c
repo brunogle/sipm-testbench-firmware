@@ -6,11 +6,40 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+int fpga_is_programmed(void){
+    const char *path = "/sys/devices/soc0/axi/f8007000.devcfg/prog_done";
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Error opening %s: %s\n", path, strerror(errno));
+        return -1;
+    }
+
+    char buf[16];
+    if (!fgets(buf, sizeof(buf), f)) {
+        fprintf(stderr, "Error reading %s: %s\n", path, strerror(errno));
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+
+    int val = atoi(buf);
+    return (val == 1) ? 1 : 0;
+}
 
 void * map_device(size_t base_addr, size_t size){
     int fd;
     char *name = "/dev/mem";
     void *map;
+
+    if(fpga_is_programmed() != 1){
+        fprintf(stderr, "bistream not loaded\n");
+        return NULL;
+    }
 
     if((fd = open(name, O_RDWR)) < 0) {
         perror("open");
@@ -181,11 +210,33 @@ char read_gpio_in_bit(mem_map_t mem_map, uint32_t bitmask){
     }
 }
 
-void fpga_map_devices(mem_map_t * mem_map){
+int fpga_map_devices(mem_map_t * mem_map){
     mem_map->spi_map = map_device(SPI_ADDR, SPI_SIZE);
+    if(mem_map->spi_map == NULL){
+        return 0;
+    }
+
     mem_map->gpio_map = map_device(GPIO0_ADDR, GPIO0_SIZE);
+    if(mem_map->gpio_map == NULL){
+        return 0;
+    }
+
     mem_map->dma_cfg_map = map_device(DMA_CFG_ADDR, DMA_CFG_SIZE);
+    if(mem_map->dma_cfg_map == NULL){
+        return 0;
+    }
+
     mem_map->adc_sampler_map = map_device(ADC_SAMPLER_ADDR, ADC_SAMPLER_SIZE);
+    if(mem_map->adc_sampler_map == NULL){
+        return 0;
+    }
+
+    mem_map->hist_map = map_device(HISTOGRAM_ADDR, HISTOGRAM_SIZE);
+    if(mem_map->hist_map == NULL){
+        return 0;
+    }
+
+    return 1;
 }
 
 void fpga_unmap_devices(mem_map_t mem_map){

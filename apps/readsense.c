@@ -22,8 +22,9 @@ int main(void){
     char sat;
     while (1) {
         float isipm_na = sense_current_blocking(mem_map, &sat);
+        float vsipm_v =  sense_voltage_blocking(mem_map);
 
-        printf("%f nA\n", isipm_na);
+        printf("%.2f V - %f nA\n", vsipm_v, isipm_na);
     }
 
 }

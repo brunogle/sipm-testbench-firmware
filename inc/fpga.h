@@ -92,9 +92,10 @@ typedef struct {
     void * gpio_map;
     void * dma_cfg_map;
     void * adc_sampler_map;
+    void * hist_map;
 } mem_map_t;
 
-
+int fpga_is_programmed(void);
 void * map_device(size_t base_addr, size_t size);
 int unmap_device(void *map, size_t size);
 
@@ -115,7 +116,7 @@ char get_gpio_out_bit(mem_map_t mem_map, uint32_t bitmask);
 
 char read_gpio_in_bit(mem_map_t mem_map, uint32_t bitmask);
 
-void fpga_map_devices(mem_map_t * mem_map);
+int fpga_map_devices(mem_map_t * mem_map);
 void fpga_unmap_devices(mem_map_t mem_map);
 
 int sampler_set_count(mem_map_t mem_map, uint32_t sample_count);
