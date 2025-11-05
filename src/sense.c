@@ -73,6 +73,46 @@ float sense_voltage_blocking(mem_map_t mem_map){
 
 }
 
+
+void sense_current_start(mem_map_t mem_map){
+    ads1247_write_reg(mem_map, ADS1247_REG_MUX0, ADS1247_MUX0_CURR_SENSE); // Set ADC input to current channel
+
+    ads1247_send_command(mem_map, ADS1247_CMD_SYNC); // Start conversion
+}
+
+void sense_voltage_start(mem_map_t mem_map){
+    ads1247_write_reg(mem_map, ADS1247_REG_MUX0, ADS1247_MUX0_VOLT_SENSE); // Set ADC input to current channel
+
+    ads1247_send_command(mem_map, ADS1247_CMD_SYNC); // Start conversion
+}
+
+
+
+float sense_voltage_get(mem_map_t mem_map, float * result, char * sat){
+    if(ads1247_data_ready(mem_map)){
+        int32_t adc_code = ads1247_read_data(mem_map);
+        *result = ads1247_code_to_voltage(adc_code, 1, sat);
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
+
+float sense_current_get(mem_map_t mem_map, float * result, char * sat){
+    if(ads1247_data_ready(mem_map)){
+        int32_t adc_code = ads1247_read_data(mem_map);
+
+        float scale = get_gpio_out_bit(mem_map, GPIO_SCALE) ? HIGH_SCALE_CURRENT_GAIN : LOW_SCALE_CURRENT_GAIN;
+        *result = -ads1247_code_to_voltage(adc_code, 1, sat)*scale;
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
+
+
 int sense_set_scale(mem_map_t mem_map, char scale){
     if(scale == LOW_SCALE){
         set_gpio_out_bit(mem_map, GPIO_SCALE, 0);

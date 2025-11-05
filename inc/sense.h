@@ -19,6 +19,9 @@ float sense_voltage_blocking(mem_map_t mem_map);
 
 int sense_set_scale(mem_map_t mem_map, char scale);
 int sense_enable_vmon(mem_map_t mem_map, char enable);
-
+void sense_current_start(mem_map_t mem_map);
+void sense_voltage_start(mem_map_t mem_map);
+float sense_voltage_get(mem_map_t mem_map, float * result, char * sat);
+float sense_current_get(mem_map_t mem_map, float * result, char * sat);
 
 #endif

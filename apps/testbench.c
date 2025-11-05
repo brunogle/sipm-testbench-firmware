@@ -147,8 +147,29 @@ int write_iv(){
     return 0;
 }
 
-int write_current(){
+int write_current(char * dir, float value){
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+
+    char path[200];
+    path_concat(path, 200, dir, "current.txt");
+
+    char time[30];
     
+    strftime(time, 34, "%Y-%m-%d_%H-%M-%S", t);
+
+
+    FILE *fp = fopen(path, "a");
+    if (!fp) {
+        perror("Failed to open file");
+        return 0 ;
+    }
+
+    fprintf(fp, "%s, %f\n", time, value);
+
+
+    fclose(fp);
+
     return 0;
 }
 
@@ -240,6 +261,10 @@ int main(){
     struct timespec last_trace;
     struct timespec now;
 
+    usleep(100000);
+    bias_set_vout(mem_map, 65, &vdac_cal_curve);
+    bias_enable(mem_map, 1);
+    usleep(500000);
 
     while(1){
         clock_gettime(CLOCK_REALTIME, &now);
@@ -254,6 +279,7 @@ int main(){
                     printf("Histogram started... "); fflush(stdout);
                 }
                 else if(ms_time_diff(now, last_curr) > INTERVAL_CURRENT*1000){
+                    sense_current_start(mem_map);
                     last_curr = now;
                     state = CURRENT;
                 }
@@ -261,7 +287,6 @@ int main(){
                     last_trace = now;
                     dma_s2mm_start(mem_map, phys_dma, DMA_SIZE);                    
                     sampler_start(mem_map);
-                    
                     printf("Trace started... "); fflush(stdout);
                     state = TRACE;
                 }                
@@ -279,8 +304,26 @@ int main(){
             break;
             
             case CURRENT:
-                printf("Current measured  \n"); fflush(stdout);
-                state = IDLE;
+                float result;
+                char sat;
+                if(sense_current_get(mem_map, &result, &sat)){
+                    //write_current(DATA_FOLDER, );
+                    if(sat && !get_gpio_out_bit(mem_map, GPIO_SCALE)){
+                        set_gpio_out_bit(mem_map, GPIO_SCALE, 1);
+                        sense_current_start(mem_map);
+                    }
+                    else if(result < 1000 && get_gpio_out_bit(mem_map, GPIO_SCALE)){
+                        set_gpio_out_bit(mem_map, GPIO_SCALE, 0);
+                        sense_current_start(mem_map);
+                    }
+                    else{
+                        write_current(DATA_FOLDER, result);
+                        printf("Current measured: %f  \n", result); fflush(stdout);
+                        state = IDLE;
+                    }
+                }
+
+
             break;
 
             case TRACE:
