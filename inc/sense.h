@@ -10,9 +10,15 @@
 #define LOW_SCALE_CURRENT_GAIN 500.0 // Current sense gain for low scale (nA/V)
 #define HIGH_SCALE_CURRENT_GAIN 50000.0 // Current sense gain for high scale (nA/V)
 
+#define HIGH_SCALE 1
+#define LOW_SCALE 0
+
 
 float sense_current_blocking(mem_map_t mem_map, char * sat);
 float sense_voltage_blocking(mem_map_t mem_map);
+
+int sense_set_scale(mem_map_t mem_map, char scale);
+int sense_enable_vmon(mem_map_t mem_map, char enable);
 
 
 #endif

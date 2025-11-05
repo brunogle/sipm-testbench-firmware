@@ -42,7 +42,7 @@ int main(void)
     for(float v = vmin; v < vmax; v+=0.2){
 
         bias_set_vout(mem_map, v, &vdac_cal_curve);
-        usleep(1000000);
+        usleep(4000000);
 
         
         char sat;

@@ -5,6 +5,7 @@
 
 #include <string.h>
 
+
 void write_samples(const char *filename, void *dma_map, uint32_t sample_size) {
     FILE *fp = fopen(filename, "w");
     if (!fp) {
@@ -39,6 +40,7 @@ int main(int argc, char **argv){
 
     mem_map_t mem_map;
 
+    printf("Mapping FPGA devices\n");
     fpga_map_devices(&mem_map);
 
     
@@ -49,16 +51,19 @@ int main(int argc, char **argv){
 
 
     // Start DMA
+    printf("Starting DMA\n");
     dma_s2mm_start(mem_map, phys_dma, DMA_SIZE);
 
     // Start ADC Sampler
+    printf("Starting ADC Sampler\n");
     sampler_set_count(mem_map, samples);
     sampler_start(mem_map);
 
     // Wait for DMA to finish
+    printf("Waiting for DMA to finish\n");
     dma_s2mm_sync(mem_map);
     
-
+    printf("Writing samples\n");
     write_samples("adc_samples.txt", dma_map, samples);
 
 

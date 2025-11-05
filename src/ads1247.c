@@ -41,6 +41,8 @@ uint8_t ads1247_read_reg(mem_map_t mem_map, uint8_t reg){
     return rx[0];
 }
 
+
+
 /*
 Resets ADS1247
 */

@@ -63,7 +63,7 @@
 #define DMA_CFG_S2MM_DA_MSB       0x4C
 #define DMA_CFG_S2MM_LENGTH       0x58
 
-#define DMA_SIZE 0x80000 //512KB (262144 16bit samples)
+#define DMA_SIZE 0x1000000 
 
 // --- GPIO
 
@@ -77,6 +77,7 @@
 #define GPIO_SCALE     0x0004
 #define GPIO_ADC_RESET 0x0008
 #define GPIO_ADC_START 0x0010
+#define GPIO_VMON_EN   0x0020
 
 // Input bits
 #define GPIO2_ADC_DRDY 0x0001

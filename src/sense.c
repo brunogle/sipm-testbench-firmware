@@ -72,3 +72,21 @@ float sense_voltage_blocking(mem_map_t mem_map){
     return adc_v*46.4545;
 
 }
+
+int sense_set_scale(mem_map_t mem_map, char scale){
+    if(scale == LOW_SCALE){
+        set_gpio_out_bit(mem_map, GPIO_SCALE, 0);
+        return 0;
+    }
+    else if(scale == HIGH_SCALE){
+        set_gpio_out_bit(mem_map, GPIO_SCALE, 1);
+        return 0;
+    }
+    else{
+        return -1;
+    }
+}
+int sense_enable_vmon(mem_map_t mem_map, char enable){
+    set_gpio_out_bit(mem_map, GPIO_VMON_EN, enable);
+    return 0;
+}

@@ -61,7 +61,7 @@
 # ==== Compiler settings ====
 CC      := gcc
 CFLAGS  := -Wall -Wextra -Iinc
-LDFLAGS :=
+LDFLAGS := -lz
 
 # ==== Directories ====
 SRC_DIR := src
@@ -71,7 +71,7 @@ OBJ_DIR := obj
 BIN_DIR := bin
 
 # ==== Top-level apps (contain main()) ====
-TOP_APPS := setvsipm ivcurve readsense sampleadc gethist      # <-- only those with main()
+TOP_APPS := setvsipm ivcurve readsense sampleadc gethist testbench     # <-- only those with main()
 
 # ==== Sources ====
 COMMON_SRC := $(wildcard $(SRC_DIR)/*.c)
