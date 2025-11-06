@@ -30,9 +30,9 @@
 #define V_SWEEP_DELAY 2
 #define V_SWEEP_PRE_DELAY 5
 
-#define INTERVAL_TRACE      3*20
+#define INTERVAL_TRACE      3*60
 #define INTERVAL_HISTOGRAM  60
-#define INTERVAL_IV_CURVE   5*10
+#define INTERVAL_IV_CURVE   5*60
 #define INTERVAL_CURRENT    10
 
 #define INTERVAL_SSH_COPY   (10*60)
@@ -69,7 +69,6 @@ enum state_t {
     IV_CURVE_PRE,
     IV_CURVE_DELAY,
     IV_CURVE_WAIT_ADC
-
 };
 
 
@@ -96,12 +95,12 @@ int write_trace(void * dma_map, char * dir){
     struct tm *t = localtime(&now);
 
     char filename[100];
-    strftime(filename, 34, "trace-%Y-%m-%d_%H-%M-%S.bin", t);
+    strftime(filename, 34, "trace-%Y-%m-%d_%H-%M-%S.txt", t);
     char path[200];
     path_concat(path, 200, dir, filename);
 
 
-    FILE *fp = fopen(path, "w");
+    FILE *fp = fopen(path, "wb");
     if (!fp) {
         perror("Failed to open file");
         return -1;
@@ -157,7 +156,7 @@ int write_iv(float * voltage, float * current, int size, char * dir){
     struct tm *t = localtime(&now);
 
     char filename[100];
-    strftime(filename, 34, "iv-%Y-%m-%d_%H-%M-%S.csv", t);
+    strftime(filename, 34, "iv-%Y-%m-%d_%H-%M-%S.txt", t);
     char path[200];
     path_concat(path, 200, dir, filename);
 
@@ -167,8 +166,8 @@ int write_iv(float * voltage, float * current, int size, char * dir){
         return 0 ;
     }
 
-    for (size_t i = 0; i < size; ++i) {
-        if (fprintf(fp, "%f, %f\n", voltage[i], current[i]) < 0) {
+    for (int i = 0; i < size; ++i) {
+        if (fprintf(fp, "%f %f\n", voltage[i], current[i]) < 0) {
             perror("Failed to write sample");
             break;
         }
@@ -297,7 +296,7 @@ int main(){
     usleep(100000);
     bias_set_vout(mem_map, V_BIAS, &vdac_cal_curve);
     bias_enable(mem_map, 1);
-    usleep(500000);
+    usleep(2000000);
 
     float voltage_sweep;
 
@@ -335,7 +334,7 @@ int main(){
                     state = IV_CURVE_PRE;
                     voltage_sweep = V_SWEEP_MIN;
                     bias_set_vout(mem_map, voltage_sweep, &vdac_cal_curve);
-                    printf("IV Curve started... \n"); fflush(stdout);
+                    printf("IV Curve started, stabilizing... "); fflush(stdout);
                 }            
             break;
 
@@ -392,7 +391,7 @@ int main(){
                 if(ms_time_diff(now, last_iv) > 1000*V_SWEEP_PRE_DELAY){
                     state = IV_CURVE_DELAY;
                     iv_delay = now;
-                    printf("IV Curve Started...\n"); 
+                    printf("Starting sweep...\n"); 
                     iv_count = 0;
                 }
             break;
@@ -429,6 +428,7 @@ int main(){
                         voltage_sweep += V_SWEEP_DELTA;
                         if(voltage_sweep > V_SWEEP_MAX){
                             state = IDLE;
+                            bias_set_vout(mem_map, V_BIAS, &vdac_cal_curve);
                             printf("IV Finished. Saving... "); fflush(stdout);
                             write_iv(iv_voltage, iv_current, iv_count, iv_path);
                             printf("OK\n");
