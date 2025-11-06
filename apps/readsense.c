@@ -40,12 +40,12 @@ int main(void){
     char sat;
     while (1) {
         set_gpio_out_bit(mem_map, GPIO_VMON_EN, 0);
-        usleep(2000000);
+        usleep(500000);
         float isipm_na = sense_current_blocking(mem_map, &sat);
-        set_gpio_out_bit(mem_map, GPIO_VMON_EN, 1);
-        usleep(2000000);
-        float vsipm_v =  sense_voltage_blocking(mem_map);
-
+        //set_gpio_out_bit(mem_map, GPIO_VMON_EN, 1);
+        //usleep(2000000);
+        //float vsipm_v =  sense_voltage_blocking(mem_map);
+        float vsipm_v = 0;
         printf("%.4f V - %.4f nA\n", vsipm_v, isipm_na);
     }
 

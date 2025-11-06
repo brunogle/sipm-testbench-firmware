@@ -22,25 +22,28 @@
 
 #define DATA_FOLDER "/root/testrun"
 
-#define V_BIAS      65.5
+#define V_BIAS      66
 
-#define V_SWEEP_MIN 63
-#define V_SWEEP_MAX 69
+#define V_SWEEP_MIN 63.0
+#define V_SWEEP_MAX 69.0
+#define V_SWEEP_DELTA 0.2
+#define V_SWEEP_DELAY 2
+#define V_SWEEP_PRE_DELAY 5
 
+#define INTERVAL_TRACE      3*20
+#define INTERVAL_HISTOGRAM  60
+#define INTERVAL_IV_CURVE   5*10
+#define INTERVAL_CURRENT    10
 
-#define INTERVAL_TRACE      10
-#define INTERVAL_HISTOGRAM  5
-#define INTERVAL_IV_CURVE   5*60
-#define INTERVAL_CURRENT    2
-
-#define INTERVAL_SSH_COPY   10*60
+#define INTERVAL_SSH_COPY   (10*60)
 #define SSH_FOLDER ""
 
 //////// TESTBENCH CONFIGURATION ///////////
 
-#define CURR_SENSE_DELAY 2.0
+
+
 #define HIST_INTEGRATION_TIME 1
-#define TRACE_SAMPLE_LENGTH 1250000 // 1ms
+#define TRACE_SAMPLE_LENGTH 1250000 // 10ms
 
 
 /*
@@ -62,7 +65,11 @@ enum state_t {
     IDLE,
     HIST,
     CURRENT,
-    TRACE
+    TRACE,
+    IV_CURVE_PRE,
+    IV_CURVE_DELAY,
+    IV_CURVE_WAIT_ADC
+
 };
 
 
@@ -106,6 +113,8 @@ int write_trace(void * dma_map, char * dir){
             break;
         }
     }
+
+    fclose(fp);
     return 0;
 }
 
@@ -138,12 +147,34 @@ int write_histogram(mem_map_t mem_map, char * dir){
             break;
         }
     }
+    fclose(fp);
 
     return 0;
 }
 
-int write_iv(){
-    
+int write_iv(float * voltage, float * current, int size, char * dir){
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+
+    char filename[100];
+    strftime(filename, 34, "iv-%Y-%m-%d_%H-%M-%S.csv", t);
+    char path[200];
+    path_concat(path, 200, dir, filename);
+
+    FILE *fp = fopen(path, "w");
+    if (!fp) {
+        perror("Failed to open file");
+        return 0 ;
+    }
+
+    for (size_t i = 0; i < size; ++i) {
+        if (fprintf(fp, "%f, %f\n", voltage[i], current[i]) < 0) {
+            perror("Failed to write sample");
+            break;
+        }
+    }
+
+    fclose(fp);
     return 0;
 }
 
@@ -259,12 +290,20 @@ int main(){
     struct timespec last_hist;
     struct timespec last_curr;
     struct timespec last_trace;
+    struct timespec last_iv;
+    struct timespec iv_delay;
     struct timespec now;
 
     usleep(100000);
-    bias_set_vout(mem_map, 65, &vdac_cal_curve);
+    bias_set_vout(mem_map, V_BIAS, &vdac_cal_curve);
     bias_enable(mem_map, 1);
     usleep(500000);
+
+    float voltage_sweep;
+
+    float iv_current[200];
+    float iv_voltage[200];
+    int iv_count;
 
     while(1){
         clock_gettime(CLOCK_REALTIME, &now);
@@ -282,6 +321,7 @@ int main(){
                     sense_current_start(mem_map);
                     last_curr = now;
                     state = CURRENT;
+                    printf("Current started... "); fflush(stdout);
                 }
                 else if(ms_time_diff(now, last_trace) > INTERVAL_TRACE*1000){
                     last_trace = now;
@@ -289,11 +329,20 @@ int main(){
                     sampler_start(mem_map);
                     printf("Trace started... "); fflush(stdout);
                     state = TRACE;
-                }                
+                }    
+                else if(ms_time_diff(now, last_iv) > INTERVAL_IV_CURVE*1000){
+                    last_iv = now;
+                    state = IV_CURVE_PRE;
+                    voltage_sweep = V_SWEEP_MIN;
+                    bias_set_vout(mem_map, voltage_sweep, &vdac_cal_curve);
+                    printf("IV Curve started... \n"); fflush(stdout);
+                }            
             break;
 
             case HIST:
                 if(ms_time_diff(now, last_hist) > HIST_INTEGRATION_TIME*1000){
+                    printf("Saving... "); fflush(stdout);
+
                     histogram_enable(mem_map, 0);
                     write_histogram(mem_map, histogram_path);
 
@@ -311,16 +360,20 @@ int main(){
                     if(sat && !get_gpio_out_bit(mem_map, GPIO_SCALE)){
                         set_gpio_out_bit(mem_map, GPIO_SCALE, 1);
                         sense_current_start(mem_map);
+                        printf("Changing scale LOW to HIGH... "); fflush(stdout);
                     }
                     else if(result < 1000 && get_gpio_out_bit(mem_map, GPIO_SCALE)){
                         set_gpio_out_bit(mem_map, GPIO_SCALE, 0);
                         sense_current_start(mem_map);
+                        printf("Changing scale HIGH to LOW... "); fflush(stdout);
                     }
                     else{
+                        printf("Current measured: %f nA. Saving... ", result); fflush(stdout);
                         write_current(DATA_FOLDER, result);
-                        printf("Current measured: %f  \n", result); fflush(stdout);
                         state = IDLE;
+                        printf("OK\n"); fflush(stdout);
                     }
+
                 }
 
 
@@ -328,13 +381,68 @@ int main(){
 
             case TRACE:
                 if(dma_ready(mem_map)){
+                    printf("Trace acquired. Saving... ");
                     write_trace(dma_map, trace_path);
-
                     printf("OK \n");
                     state = IDLE;
                 }
             break;
 
+            case IV_CURVE_PRE:
+                if(ms_time_diff(now, last_iv) > 1000*V_SWEEP_PRE_DELAY){
+                    state = IV_CURVE_DELAY;
+                    iv_delay = now;
+                    printf("IV Curve Started...\n"); 
+                    iv_count = 0;
+                }
+            break;
+
+            case IV_CURVE_DELAY:
+                if(ms_time_diff(now, iv_delay) > 1000*V_SWEEP_DELAY){
+                    printf("Starting ADC... "); fflush(stdout);
+                    sense_current_start(mem_map);
+                    state = IV_CURVE_WAIT_ADC;
+                }
+            break;
+
+            case IV_CURVE_WAIT_ADC:
+                float curr_result;
+                char iv_sat;
+                if(sense_current_get(mem_map, &curr_result, &iv_sat)){
+                    if(iv_sat && !get_gpio_out_bit(mem_map, GPIO_SCALE)){
+                        set_gpio_out_bit(mem_map, GPIO_SCALE, 1);
+                        state = IV_CURVE_DELAY;
+                        iv_delay = now;
+                        printf("Changing scale LOW to HIGH... "); fflush(stdout);
+                    }
+                    else if(!iv_sat && get_gpio_out_bit(mem_map, GPIO_SCALE) && (curr_result < 1000)){
+                        set_gpio_out_bit(mem_map, GPIO_SCALE, 0);
+                        state = IV_CURVE_DELAY;
+                        iv_delay = now;            
+                        printf("Changing scale HIGH to LOW... "); fflush(stdout);            
+                    }
+                    else{
+                        printf("ADC Finished %f V: %f nA\n", voltage_sweep, curr_result);
+                        iv_current[iv_count] = curr_result;
+                        iv_voltage[iv_count] = voltage_sweep;
+                        iv_count++;
+                        voltage_sweep += V_SWEEP_DELTA;
+                        if(voltage_sweep > V_SWEEP_MAX){
+                            state = IDLE;
+                            printf("IV Finished. Saving... "); fflush(stdout);
+                            write_iv(iv_voltage, iv_current, iv_count, iv_path);
+                            printf("OK\n");
+                            
+                        }
+                        else{
+                            bias_set_vout(mem_map, voltage_sweep, &vdac_cal_curve);
+                            state = IV_CURVE_DELAY;
+                            iv_delay = now;
+                        }
+                    }
+                }
+            break;
+            
             default:
             break;
 

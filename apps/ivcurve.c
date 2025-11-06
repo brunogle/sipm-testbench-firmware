@@ -25,7 +25,7 @@ int main(void)
     ads1247_init(mem_map);
     dac8562_initialize(mem_map);
 
-    int vmin = 50;
+    int vmin = 63;
     int vmax = 69;
 
 
@@ -34,15 +34,15 @@ int main(void)
     bias_set_vout(mem_map, vmin, &vdac_cal_curve);
     bias_enable(mem_map, 1);
 
-    usleep(3000000);
+    usleep(5000000);
 
     FILE *fp = fopen("ivcurve.txt", "w");
     
 
-    for(float v = vmin; v < vmax; v+=0.2){
+    for(float v = vmin; v < vmax; v+=0.1){
 
         bias_set_vout(mem_map, v, &vdac_cal_curve);
-        usleep(4000000);
+        usleep(1000000);
 
         
         char sat;

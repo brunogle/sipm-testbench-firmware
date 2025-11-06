@@ -22,7 +22,7 @@ int main(){
     
     
     histogram_enable(mem_map, 1);
-    usleep(10000000);
+    usleep(1000000);
     histogram_enable(mem_map, 0);
 
     uint32_t hist[HIST_BINS];
