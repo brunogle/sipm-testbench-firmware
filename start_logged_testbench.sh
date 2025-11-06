@@ -12,13 +12,21 @@ mkdir -p "$LOG_DIR"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 LOG_FILE="$LOG_DIR/${SESSION_NAME}_${TIMESTAMP}.log"
 
-# === Start tmux session ===
-tmux new-session -d -s "$SESSION_NAME"
+COMMANDS=$(cat <<'EOF'
+cat /root/system_wrapper.bit > /dev/xdevcfg
+sleep 1
+/root/sipm-testbench/bin/testbench
+EOF
+)
 
-# Set up logging with timestamps
-tmux pipe-pane -o -t "$SESSION_NAME" \
-  "awk '{ print strftime(\"[%Y-%m-%d %H:%M:%S]\"), \$0; fflush() }' >> '$LOG_FILE'"
+# === Start tmux session running those commands ===
+tmux new-session -d -s "$SESSION_NAME" "bash -c '$COMMANDS'"
+
+
+tmux pipe-pane -o "sed -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[mGK]//g' > output.log"
+
 
 # Attach to the session
 tmux attach -t "$SESSION_NAME"
+
 

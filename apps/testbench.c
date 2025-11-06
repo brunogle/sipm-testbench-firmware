@@ -24,15 +24,15 @@
 
 #define V_BIAS      66
 
-#define V_SWEEP_MIN 63.0
+#define V_SWEEP_MIN 61.0
 #define V_SWEEP_MAX 69.0
 #define V_SWEEP_DELTA 0.2
 #define V_SWEEP_DELAY 2
 #define V_SWEEP_PRE_DELAY 5
 
-#define INTERVAL_TRACE      3*60
+#define INTERVAL_TRACE      5*60
 #define INTERVAL_HISTOGRAM  60
-#define INTERVAL_IV_CURVE   5*60
+#define INTERVAL_IV_CURVE   20*60
 #define INTERVAL_CURRENT    10
 
 #define INTERVAL_SSH_COPY   (10*60)
@@ -90,9 +90,8 @@ void path_concat(char *dest, size_t size, const char *path1, const char *path2) 
     snprintf(dest, size, "%.*s/%s", (int)len1, path1, path2);
 }
 
-int write_trace(void * dma_map, char * dir){
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
+int write_trace(void * dma_map, char * dir, struct tm *t){
+    
 
     char filename[100];
     strftime(filename, 34, "trace-%Y-%m-%d_%H-%M-%S.txt", t);
@@ -117,9 +116,8 @@ int write_trace(void * dma_map, char * dir){
     return 0;
 }
 
-int write_histogram(mem_map_t mem_map, char * dir){
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
+int write_histogram(mem_map_t mem_map, char * dir, struct tm *t){
+    
 
 
 
@@ -151,9 +149,8 @@ int write_histogram(mem_map_t mem_map, char * dir){
     return 0;
 }
 
-int write_iv(float * voltage, float * current, int size, char * dir){
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
+int write_iv(float * voltage, float * current, int size, char * dir, struct tm *t){
+    
 
     char filename[100];
     strftime(filename, 34, "iv-%Y-%m-%d_%H-%M-%S.txt", t);
@@ -177,9 +174,8 @@ int write_iv(float * voltage, float * current, int size, char * dir){
     return 0;
 }
 
-int write_current(char * dir, float value){
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
+int write_current(char * dir, float value, struct tm *t){
+    
 
     char path[200];
     path_concat(path, 200, dir, "current.txt");
@@ -304,37 +300,51 @@ int main(){
     float iv_voltage[200];
     int iv_count;
 
+    char timestamp_str[64];
+    
+    struct tm *t;
+
     while(1){
+
+        time_t nowt = time(NULL);
         clock_gettime(CLOCK_REALTIME, &now);
 
 
         switch(state){
             case IDLE:
                 if(ms_time_diff(now, last_hist) > INTERVAL_HISTOGRAM*1000){
+                    t = localtime(&nowt);
+                    strftime(timestamp_str, sizeof(timestamp_str), "%Y-%m-%d_%H-%M-%S", t);
                     histogram_enable(mem_map, 1);
                     last_hist = now;
                     state = HIST;
-                    printf("Histogram started... "); fflush(stdout);
+                    printf("[%s] Histogram started... ", timestamp_str); fflush(stdout);
                 }
                 else if(ms_time_diff(now, last_curr) > INTERVAL_CURRENT*1000){
+                    t = localtime(&nowt);
+                    strftime(timestamp_str, sizeof(timestamp_str), "%Y-%m-%d_%H-%M-%S", t);
                     sense_current_start(mem_map);
                     last_curr = now;
                     state = CURRENT;
-                    printf("Current started... "); fflush(stdout);
+                    printf("[%s] Current started... ", timestamp_str); fflush(stdout);
                 }
                 else if(ms_time_diff(now, last_trace) > INTERVAL_TRACE*1000){
+                    t = localtime(&nowt);
+                    strftime(timestamp_str, sizeof(timestamp_str), "%Y-%m-%d_%H-%M-%S", t);
                     last_trace = now;
                     dma_s2mm_start(mem_map, phys_dma, DMA_SIZE);                    
                     sampler_start(mem_map);
-                    printf("Trace started... "); fflush(stdout);
+                    printf("[%s] Trace started... ", timestamp_str); fflush(stdout);
                     state = TRACE;
                 }    
                 else if(ms_time_diff(now, last_iv) > INTERVAL_IV_CURVE*1000){
+                    t = localtime(&nowt);
+                    strftime(timestamp_str, sizeof(timestamp_str), "%Y-%m-%d_%H-%M-%S", t);
                     last_iv = now;
                     state = IV_CURVE_PRE;
                     voltage_sweep = V_SWEEP_MIN;
                     bias_set_vout(mem_map, voltage_sweep, &vdac_cal_curve);
-                    printf("IV Curve started, stabilizing... "); fflush(stdout);
+                    printf("[%s] IV Curve started, stabilizing... ", timestamp_str); fflush(stdout);
                 }            
             break;
 
@@ -343,7 +353,7 @@ int main(){
                     printf("Saving... "); fflush(stdout);
 
                     histogram_enable(mem_map, 0);
-                    write_histogram(mem_map, histogram_path);
+                    write_histogram(mem_map, histogram_path, t);
 
                     histogram_reset(mem_map);
                     state = IDLE;
@@ -368,7 +378,7 @@ int main(){
                     }
                     else{
                         printf("Current measured: %f nA. Saving... ", result); fflush(stdout);
-                        write_current(DATA_FOLDER, result);
+                        write_current(DATA_FOLDER, result, t);
                         state = IDLE;
                         printf("OK\n"); fflush(stdout);
                     }
@@ -381,7 +391,7 @@ int main(){
             case TRACE:
                 if(dma_ready(mem_map)){
                     printf("Trace acquired. Saving... ");
-                    write_trace(dma_map, trace_path);
+                    write_trace(dma_map, trace_path, t);
                     printf("OK \n");
                     state = IDLE;
                 }
@@ -430,7 +440,7 @@ int main(){
                             state = IDLE;
                             bias_set_vout(mem_map, V_BIAS, &vdac_cal_curve);
                             printf("IV Finished. Saving... "); fflush(stdout);
-                            write_iv(iv_voltage, iv_current, iv_count, iv_path);
+                            write_iv(iv_voltage, iv_current, iv_count, iv_path, t);
                             printf("OK\n");
                             
                         }
