@@ -15,6 +15,7 @@ LOG_FILE="$LOG_DIR/${SESSION_NAME}_${TIMESTAMP}.log"
 COMMANDS=$(cat <<'EOF'
 cat /root/system_wrapper.bit > /dev/xdevcfg
 sleep 1
+make
 /root/sipm-testbench/bin/testbench
 EOF
 )
@@ -23,8 +24,8 @@ EOF
 tmux new-session -d -s "$SESSION_NAME" "bash -c '$COMMANDS'"
 
 
-tmux pipe-pane -o "sed -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[mGK]//g' > output.log"
-
+tmux pipe-pane -o -t "$SESSION_NAME" \
+  "sed -u -r 's/\x1B\[([0-9;]*[A-Za-z])//g' | stdbuf -oL tee -a \"$LOG_FILE\" >/dev/null"
 
 # Attach to the session
 tmux attach -t "$SESSION_NAME"

@@ -20,19 +20,19 @@
 
 //////// RUN CONFIGURATION ///////////
 
-#define DATA_FOLDER "/root/testrun"
+#define DATA_FOLDER "/root/irrad0"
 
 #define V_BIAS      66
 
 #define V_SWEEP_MIN 61.0
 #define V_SWEEP_MAX 69.0
 #define V_SWEEP_DELTA 0.2
-#define V_SWEEP_DELAY 2
+#define V_SWEEP_DELAY 3
 #define V_SWEEP_PRE_DELAY 5
 
-#define INTERVAL_TRACE      5*60
+#define INTERVAL_TRACE      (10*60)
 #define INTERVAL_HISTOGRAM  60
-#define INTERVAL_IV_CURVE   20*60
+#define INTERVAL_IV_CURVE   (20*60)
 #define INTERVAL_CURRENT    10
 
 #define INTERVAL_SSH_COPY   (10*60)
@@ -42,7 +42,7 @@
 
 
 
-#define HIST_INTEGRATION_TIME 1
+#define HIST_INTEGRATION_TIME 2
 #define TRACE_SAMPLE_LENGTH 1250000 // 10ms
 
 
